@@ -1,6 +1,6 @@
 # Build Your First AI Chatbot → AI Agent
 
-A step-by-step guide from "Hello World" chatbot to a tool-calling AI agent.
+A step-by-step guide from "Hello World" chatbot to a tool-calling AI agent with MCP.
 
 ---
 
@@ -9,7 +9,7 @@ A step-by-step guide from "Hello World" chatbot to a tool-calling AI agent.
 ### 1. Install the packages
 
 ```bash
-pip install gradio groq fastapi uvicorn requests
+pip install gradio groq fastapi uvicorn requests fastmcp
 ```
 
 ### 2. Get your Groq API key
@@ -178,31 +178,116 @@ python step9_agentic_loop.py
 
 ---
 
+## Part 3: MCP — Model Context Protocol (Steps 10-13)
+
+### Step 10: Your First MCP Server
+
+**File:** `step10_mcp_server.py`
+
+Build a tool server using FastMCP. One decorator replaces 15 lines of JSON Schema from step 7.
+
+```bash
+python step10_mcp_server.py
+```
+
+Inspect your server in the browser:
+```bash
+fastmcp dev step10_mcp_server.py
+```
+
+**What you learned:** MCP is a standard protocol for exposing tools. FastMCP auto-generates JSON Schemas from Python type hints.
+
+---
+
+### Step 11: Your First MCP Client
+
+**File:** `step11_mcp_client.py`
+
+Connect to the MCP server, discover available tools, and call them through the protocol.
+
+```bash
+python step11_mcp_client.py
+```
+
+**What you learned:** MCP clients discover tools at runtime. The client never sees the server's code — it uses the protocol. Any client can talk to any server.
+
+---
+
+### Step 12: Multi-Tool MCP Server
+
+**File:** `step12_mcp_multi_tool.py`
+
+Three tools (weather, calculator, contacts) in one MCP server. Compare with step 8: same tools, 1/10th the boilerplate.
+
+```bash
+python step12_mcp_multi_tool.py
+```
+
+Inspect all tools:
+```bash
+fastmcp dev step12_mcp_multi_tool.py
+```
+
+**What you learned:** MCP scales effortlessly. Add a tool = add a function with `@mcp.tool`. No schemas, no dispatch dicts, no registration code.
+
+---
+
+### Step 13: MCP + LLM — The Complete Picture
+
+**File:** `step13_mcp_with_llm.py`
+
+The capstone: MCP server provides tools, MCP client discovers them, LLM uses them in an agentic loop. This is how Claude Desktop, Cursor, and production AI systems work.
+
+```bash
+python step13_mcp_with_llm.py
+```
+
+**The flow:**
+```
+MCP server exposes tools (auto-generated schemas)
+    → MCP client discovers tools (list_tools)
+    → Convert to Groq format (MCP schema → Groq tool format)
+    → LLM decides which tool to call
+    → Execute via MCP (call_tool)
+    → Send result back to LLM
+    → Repeat until final answer
+```
+
+**What you learned:** MCP decouples tools from the agent. The agentic loop is identical to step 9 — only the tool source changed. This is the production pattern.
+
+---
+
 ## What You Built
 
 ```
 Part 1: Chatbot
-  Step 1: Gradio (echo bot)
-  Step 2: Gradio → Groq AI
-  Step 3: FastAPI → Groq AI
-  Step 4: Gradio → FastAPI → Groq AI
+  Step 1:  Gradio (echo bot)
+  Step 2:  Gradio → Groq AI
+  Step 3:  FastAPI → Groq AI
+  Step 4:  Gradio → FastAPI → Groq AI
 
 Part 2: Tool Calling
-  Step 5: See hallucination (the problem)
-  Step 6: Manual tool call (JSON parsing — fragile)
-  Step 7: API tool calling (JSON Schema — reliable)
-  Step 8: Multi-tool routing (LLM picks the right tool)
-  Step 9: Agentic loop (autonomous multi-step reasoning)
+  Step 5:  See hallucination (the problem)
+  Step 6:  Manual tool call (JSON parsing — fragile)
+  Step 7:  API tool calling (JSON Schema — reliable)
+  Step 8:  Multi-tool routing (LLM picks the right tool)
+  Step 9:  Agentic loop (autonomous multi-step reasoning)
+
+Part 3: MCP (Model Context Protocol)
+  Step 10: MCP server (standardized tool exposure)
+  Step 11: MCP client (tool discovery + calling)
+  Step 12: Multi-tool MCP server (scalable, minimal code)
+  Step 13: MCP + LLM agentic loop (production-ready)
 ```
 
 ---
 
 ## Quick Fixes
 
-**"Module not found"** → Run: `pip install gradio groq fastapi uvicorn requests`
+**"Module not found"** → Run: `pip install gradio groq fastapi uvicorn requests fastmcp`
 
 **"API key error"** → Run: `export GROQ_API_KEY=your_key_here`
 
 **"Connection refused"** → Make sure step3 is running before step4
 
-**Tool calling not working** → Make sure you're using a model that supports tool calling (e.g., `llama-3.3-70b-versatile`)
+**MCP client can't connect** → Make sure the server file (e.g., step10) is in the same directory
