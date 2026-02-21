@@ -1,6 +1,6 @@
-# Build Your First AI Chatbot → AI Agent
+# Build Your First AI Chatbot → AI Agent → RAG System
 
-A step-by-step guide from "Hello World" chatbot to a tool-calling AI agent with MCP.
+A step-by-step guide from "Hello World" chatbot to a tool-calling AI agent with MCP and RAG.
 
 ---
 
@@ -9,7 +9,7 @@ A step-by-step guide from "Hello World" chatbot to a tool-calling AI agent with 
 ### 1. Install the packages
 
 ```bash
-pip install gradio groq fastapi uvicorn requests fastmcp
+pip install gradio groq fastapi uvicorn requests fastmcp sentence-transformers
 ```
 
 ### 2. Get your Groq API key
@@ -257,6 +257,154 @@ MCP server exposes tools (auto-generated schemas)
 
 ---
 
+## Part 4: RAG — Retrieval-Augmented Generation (Steps 14-20)
+
+### Step 14: The Scaling Problem — Why Tool Calling Isn't Enough
+
+**File:** `step14_rag_the_problem.py`
+
+You already built RAG with tool calling (R: call API, A: inject result, G: LLM answers). But that worked for 10 words. What about 10,000 pages? Stuff all data into the prompt and watch it break.
+
+```bash
+python step14_rag_the_problem.py
+```
+
+**The three forcing functions:**
+```
+1. Window Limits   → Data doesn't fit in context
+2. Cost Explosion  → Every query sends ALL data ($$$$)
+3. Attention Dilution → Answer gets lost in the noise
+```
+
+**What you learned:** Context stuffing doesn't scale. You need to send ONLY what's relevant. That's what RAG solves.
+
+---
+
+### Step 15: Chunking — Breaking Documents into Pieces
+
+**File:** `step15_chunking.py`
+
+The first step in building an index: break large documents into small, searchable pieces. Implement four strategies from scratch.
+
+```bash
+python step15_chunking.py
+```
+
+No API key needed — this is pure Python computation.
+
+**What you learned:** Fixed-size chunking is simple but splits sentences. Sentence/paragraph chunking preserves meaning. Overlapping chunks prevent boundary information loss. Chunk size is a critical parameter.
+
+---
+
+### Step 16: Embeddings — Turning Text into Numbers
+
+**File:** `step16_embeddings.py`
+
+Why keyword search fails and how embeddings capture meaning. Build cosine similarity from scratch, then use real neural embeddings.
+
+```bash
+python step16_embeddings.py
+```
+
+**The key insight:**
+```
+Student asks: "Has anyone had trouble getting data from the weather API?"
+Semantically = Tool Calling question. But "tool calling" never appears.
+
+Keyword search: MISSES it (no matching words)
+Semantic search: FINDS it (understands the meaning)
+```
+
+**What you learned:** Embeddings convert text to vectors where similar meaning = similar direction. Cosine similarity measures alignment. Semantic search finds relevant results even with different words.
+
+---
+
+### Step 17: Build Your Own Vector Store
+
+**File:** `step17_vector_store.py`
+
+Build the "index" from the textbook analogy. An in-memory vector store with add, search, and metadata filtering — the same thing Pinecone, Weaviate, and ChromaDB do internally.
+
+```bash
+python step17_vector_store.py
+```
+
+**What you learned:** A vector store = embeddings + metadata + similarity search. Metadata filtering (module, week, content_type) narrows the search space for better precision.
+
+---
+
+### Step 18: The Complete RAG Pipeline
+
+**File:** `step18_rag_pipeline.py`
+
+Wire everything together: chunking + embeddings + vector store + LLM. The full pipeline that turns your data into grounded answers.
+
+```bash
+python step18_rag_pipeline.py
+```
+
+**The pipeline:**
+```
+INDEX (offline, one-time)
+    → Chunk documents → Embed chunks → Store with metadata
+
+QUERY (per question)
+    → Retrieve top-k chunks → Augment the prompt → Generate answer
+```
+
+**What you learned:** RAG uses 3 relevant chunks instead of 25 (or 25,000) documents. The augmented prompt grounds the LLM in real data. Metadata filtering makes retrieval precise.
+
+---
+
+### Step 19: RAGAS Evaluation — Measure, Don't Vibe Check
+
+**File:** `step19_evaluation.py`
+
+"I tried a few queries and it seemed okay" is not evaluation. Implement the four RAGAS metrics to diagnose exactly where your pipeline is failing.
+
+```bash
+python step19_evaluation.py
+```
+
+**The four metrics:**
+```
+RETRIEVAL METRICS (measure the retriever):
+  Context Precision → Of retrieved, how much was relevant?  (Low = too much noise)
+  Context Recall    → Of relevant, how much was found?      (Low = missing content)
+
+GENERATION METRICS (measure the LLM):
+  Faithfulness      → Answer supported by context?          (Low = hallucinating)
+  Answer Relevancy  → Answer addresses the question?        (Low = off-target)
+```
+
+**What you learned:** Each metric points to a specific fix. Low precision = fix retriever filtering. Low faithfulness = fix system prompt. Metrics, not vibes.
+
+---
+
+### Step 20: RAG + Agentic Loop — The Full Picture
+
+**File:** `step20_rag_with_agent.py`
+
+The capstone: RAG as a tool in the agentic loop from step 9. The agent autonomously decides whether to search the knowledge base, call the weather API, or do a calculation.
+
+```bash
+python step20_rag_with_agent.py
+```
+
+**The decision framework:**
+```
+TOOL CALLING          RAG                    BOTH
+─────────────         ────────────           ──────────────
+Small data            Large data             Act AND retrieve
+API-shaped            Document search        KB + actions
+Real-time             Precision matters      MCP makes this clean
+"What's the weather?" "When do we learn RAG?" "Search KB + create ticket"
+```
+
+**What you learned:** RAG is just another tool in the agentic loop. The loop from step 9 is identical — only the tools changed. Start with tool calling, graduate to RAG when you hit a wall.
+
+---
+
 ## What You Built
 
 ```
@@ -278,16 +426,27 @@ Part 3: MCP (Model Context Protocol)
   Step 11: MCP client (tool discovery + calling)
   Step 12: Multi-tool MCP server (scalable, minimal code)
   Step 13: MCP + LLM agentic loop (production-ready)
+
+Part 4: RAG (Retrieval-Augmented Generation)
+  Step 14: Context stuffing fails (the scaling problem)
+  Step 15: Chunking (break documents into pieces)
+  Step 16: Embeddings (text → vectors, semantic search)
+  Step 17: Vector store (searchable index with metadata)
+  Step 18: Full RAG pipeline (index → retrieve → augment → generate)
+  Step 19: RAGAS evaluation (metrics, not vibes)
+  Step 20: RAG + agentic loop (the complete system)
 ```
 
 ---
 
 ## Quick Fixes
 
-**"Module not found"** → Run: `pip install gradio groq fastapi uvicorn requests fastmcp`
+**"Module not found"** → Run: `pip install gradio groq fastapi uvicorn requests fastmcp sentence-transformers`
 
 **"API key error"** → Run: `export GROQ_API_KEY=your_key_here`
 
 **"Connection refused"** → Make sure step3 is running before step4
 
 **MCP client can't connect** → Make sure the server file (e.g., step10) is in the same directory
+
+**sentence-transformers slow to load** → First run downloads the model (~80MB). Subsequent runs use the cached version.
