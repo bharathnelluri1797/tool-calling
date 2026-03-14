@@ -41,7 +41,7 @@ def chat(request: ChatRequest):
     # Send message to AI
     response = client.chat.completions.create(
         messages=[{"role": "user", "content": request.message}],
-        model="openai/gpt-oss-20b",
+        model="llama3-8b-8192",
     )
 
     # Return AI's reply
